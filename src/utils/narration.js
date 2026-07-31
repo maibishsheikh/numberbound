@@ -1,151 +1,88 @@
-// ──────────────────────────────────────────────────
-// Narration Scripts — Exact Screen Text Match
-// ──────────────────────────────────────────────────
+// src/utils/narration.js
+//
+// Every narration segment is a { text, style } object, where `style`
+// selects a voice-setting preset from config/audio.config.js.
+//
+// Digits are spoken naturally by text-to-speech ("47", "83") so no
+// rewriting is needed for numerals themselves. spokenSafe() is kept as
+// a general-purpose cleanup pass (e.g. stripping stray symbols) so
+// procedurally generated Practice-phase question text is always safe
+// to narrate as-is.
+export function spokenSafe(text) {
+  if (!text) return text;
+  let t = text;
+  t = t.replace(/\$(\d+)/g, '$1 dollars');
+  t = t.replace(/["“”]/g, '');
+  return t;
+}
 
-import { say, ask, cheer, emphasize, think, celebrate, instruct, pause } from './audio';
+// ── Story narration ──
+// One segment per slide, in slide order. StoryPhase.jsx plays
+// storyNarrations.readingNumbers[currentSlide] whenever the slide changes.
+export const storyNarrations = {
+  readingNumbers: [
+    {
+      text: "One sunny morning, Wei Ming walked into the school library. He loved books, especially about dinosaurs! He looked around at the tall shelves full of colourful books and wondered how many were on just one shelf.",
+      style: 'thinking',
+    },
+    {
+      text: "The librarian smiled and said, we have forty-two books about dinosaurs! Wei Ming was puzzled. Forty-two? That sounded like a lot, but what did forty-two really mean?",
+      style: 'instruction',
+    },
+    {
+      text: "Then his classmate Priya showed him a trick! She grouped 4 bundles of ten books and 2 single books. Look, she said, 4 tens and 2 ones make 42! Suddenly, the number made perfect sense.",
+      style: 'emphasis',
+    },
+    {
+      text: "Wei Ming grinned. Now he could read and write any number from zero all the way to one hundred! Can we practise more, he asked Bintang the bear. And so, the number adventure began.",
+      style: 'celebration',
+    },
+  ],
+};
 
-// ─── INTRO SCREEN ────────────────────────────────
-export function introNarration() {
+// ── Wonder-hook narration ──
+// Speaks the hook question, then its follow-up subtext.
+export function wonderHookNarration(wonder) {
+  if (!wonder) return [];
+  const segments = [];
+  if (wonder.question) segments.push({ text: wonder.question, style: 'question' });
+  if (wonder.subtext) segments.push({ text: wonder.subtext, style: 'thinking' });
+  return segments;
+}
+
+// ── Simulate station intro narration ──
+export function simulationStationNarration(stationId) {
+  const scripts = [
+    [
+      { text: 'Star Counting Mission!', style: 'emphasis' },
+      { text: 'Tap the ten-frame to fill in exactly the right number of stars.', style: 'instruction' },
+    ],
+    [
+      { text: 'Toy Box Mission!', style: 'emphasis' },
+      { text: 'Build teen numbers as one full ten, plus a few extra ones.', style: 'instruction' },
+    ],
+    [
+      { text: 'Block Builder Mission!', style: 'emphasis' },
+      { text: 'Use the tens and ones controls to build each number with base-ten blocks.', style: 'instruction' },
+    ],
+    [
+      { text: 'Word Match Mission!', style: 'emphasis' },
+      { text: 'Tap a numeral, then tap its matching number word.', style: 'instruction' },
+    ],
+  ];
+  return scripts[stationId] || [];
+}
+
+// ── Boss Battle narration ──
+export function bossBattleNarration() {
   return [
-    cheer("Welcome to Number Bonds for Subtraction!"),
-    say("Today, we're going to learn how to take away numbers using number bonds."),
-    ask("What happens when we take a big number and break it into two smaller parts? Can we use one part to find the missing piece?"),
-    cheer("Are you ready to crack the number bonds and solve some fun subtraction challenges? Let's get started on our learning journey!"),
+    { text: 'Boss battle time! Answer every question correctly to win.', style: 'emphasis' },
+    { text: 'Remember: break each number into tens and ones, then count up.', style: 'instruction' },
   ];
 }
 
-// ─── WONDER PHASE ────────────────────────────────
-export function wonderNarration(questionText, subtext) {
+export function bossWinNarration() {
   return [
-    ask(questionText),
-    say(subtext),
-  ];
-}
-
-export function wonderDiscoverNarration() {
-  return [];
-}
-
-// ─── STORY PHASE ─────────────────────────────────
-
-export function getStoryNarration(slideIndex) {
-  switch (slideIndex) {
-    case 0:
-      return [
-        say("Wei Ming has 8 shiny stickers. He wants to share them with his friend Priya, so he gives 3 stickers to her. Wei Ming wonders..."),
-        ask("How many stickers do I have left?"),
-        say("Let's help Wei Ming!"),
-      ];
-    case 1:
-      return [
-        say("To find out, we take away the 3 stickers he gave to Priya. Taking away is called subtraction. When we subtract, the number gets smaller!"),
-        emphasize("8 take away 3 leaves 5!"),
-        say("Subtract means take away!"),
-      ];
-    case 2:
-      return [
-        say("Wei Ming drew a special picture called a number bond. He put the whole 8 at the top. Then he made two branches for the parts: 3 for Priya, and 5 for him. \"The whole minus a part equals the other part!\" he said."),
-        emphasize("Whole minus Part equals Part!"),
-        say("Crack the number bond!"),
-      ];
-    case 3:
-      return [
-        say("Wei Ming was so excited! He learned he could use number bonds to solve subtraction word problems easily. \"Can we practice more?\" he asked."),
-        cheer("Number bonds — here we come!"),
-        say("Your turn now!"),
-      ];
-    default:
-      return [];
-  }
-}
-
-// ─── SIMULATE PHASE ──────────────────────────────
-
-export function simulateStation1Intro(whole, removed) {
-  return [
-    say(`Start with ${whole} counters. Tap to take away ${removed}.`),
-  ];
-}
-
-export function simulateStation2Intro() {
-  return [
-    say("Find the missing number to complete the bond!"),
-  ];
-}
-
-export function simulateStation3Intro() {
-  return [
-    say("Fill in the blank! Use the number pad."),
-  ];
-}
-
-export function simulateAllComplete() {
-  return []; // No text on screen, so no narration to match
-}
-
-// ─── PLAY PHASE ──────────────────────────────────
-
-export function playWorldIntro(worldName) {
-  return [
-    celebrate(`Welcome to ${worldName}!`),
-  ];
-}
-
-export function playReadQuestion(questionText) {
-  return [
-    say(questionText),
-  ];
-}
-
-export function getHelpNarration(hintLevel = 1) {
-  // No text on screen for hints
-  return [];
-}
-
-export function getEncouragementNarration() {
-  // No text on screen for random encouragement
-  return [];
-}
-
-export function playCorrectNarration(streak = 0) {
-  return [];
-}
-
-export function playWrongNarration() {
-  return [];
-}
-
-export function playWorldComplete(worldName, score, total) {
-  return [
-    say(`${worldName} Complete!`),
-    say(`Score: ${score} out of ${total}`),
-  ];
-}
-
-// ─── REFLECT PHASE ───────────────────────────────
-
-export function reflectIntroNarration() {
-  return [
-    ask("What did you learn?"),
-  ];
-}
-
-export function reflectCorrectNarration() {
-  return [];
-}
-
-export function reflectWrongNarration() {
-  return [];
-}
-
-export function reflectConfidenceNarration() {
-  return [
-    ask("How confident do you feel about subtraction using number bonds?"),
-  ];
-}
-
-export function reflectCertificateNarration(pct) {
-  return [
-    say(`You scored ${Math.round(pct)}%`),
+    { text: 'Boss defeated! Fantastic number reading!', style: 'celebration' },
   ];
 }

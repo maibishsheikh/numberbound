@@ -1,103 +1,65 @@
-import { useEffect, useRef } from 'react';
-import { narrate, stopNarration } from '../utils/audio';
-import { introNarration } from '../utils/narration';
+import React from 'react';
+import { motion } from 'framer-motion';
+import Button from './Button.jsx';
 
-const JOURNEY_PHASES = [
-  { icon: '🔍', label: 'Wonder', desc: 'A subtraction mystery!' },
-  { icon: '📖', label: 'Story', desc: 'See subtraction in action' },
-  { icon: '🧪', label: 'Simulate', desc: 'Build number bonds' },
-  { icon: '🎮', label: 'Play', desc: 'Gamified challenges' },
-  { icon: '📓', label: 'Reflect', desc: 'What did you learn?' },
+const PHASES = [
+  { icon: '🤔', label: 'Wonder',   desc: 'A number mystery!' },
+  { icon: '📖', label: 'Story',    desc: "Wei Ming's Library Adventure" },
+  { icon: '🧮', label: 'Simulate', desc: 'Build numbers live' },
+  { icon: '🎯', label: 'Practice', desc: '100 challenges' },
+  { icon: '📓', label: 'Reflect',  desc: 'Quiz & review' },
 ];
 
-export default function IntroScreen({ onStart, audioEnabled, onToggleAudio }) {
-  const narrationRef = useRef(null);
+const FEATURES = [
+  { icon: '🎯', label: '100 Questions' },
+  { icon: '🔢', label: 'Reading Numbers' },
+  { icon: '🏆', label: 'Badges & XP' },
+];
 
-  // Play intro narration when screen mounts
-  useEffect(() => {
-    if (audioEnabled) {
-      const timer = setTimeout(() => {
-        narrationRef.current = narrate(introNarration(), true);
-      }, 200);
-      return () => {
-        clearTimeout(timer);
-        narrationRef.current?.cancel();
-        stopNarration();
-      };
-    }
-  }, [audioEnabled]);
-
-  const handleStart = () => {
-    narrationRef.current?.cancel();
-    stopNarration();
-    onStart();
-  };
-
+export default function IntroScreen({ onBegin }) {
   return (
     <div className="intro-screen">
-      {/* Curriculum badge */}
-      <div className="intro-badge">
-        ✨  · Grade 1 Maths
-      </div>
+      <motion.div className="intro-badge"
+        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        ✨ Intellia SG · Grade 1 Math
+      </motion.div>
 
-      {/* Title */}
-      <h1 className="intro-title">
-        <span style={{ color: 'var(--coral)' }}>Number Bonds</span>{' '}For{' '}
-        <span style={{ color: 'var(--gold)' }}>Subtraction</span>
-      </h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: 4, fontFamily: 'var(--font-display)' }}>
-        Lesson 3.2 · Subtract within 20 using number bonds
-      </p>
+      <motion.h1 className="intro-title"
+        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.08, type: 'spring', stiffness: 200, damping: 16 }}>
+        <span className="title-main">Reading &amp; Writing Numbers</span>
+        <span className="title-sub">Numbers 0 to 100 — Introduction!</span>
+      </motion.h1>
 
-      {/* Mascot */}
-      <div className="mascot-container">
-        <div className="mascot">🤖</div>
-        <div className="speech-bubble">
-          Let's crack the number bonds! 🔍
-        </div>
-      </div>
-
-      {/* Description */}
-      <p className="intro-desc">
-        Learn to use <strong style={{ color: 'var(--gold)' }}>number bonds</strong> to take away numbers, find the missing part, and solve subtraction challenges!
-      </p>
+      {/* Mascot teaser */}
+      <motion.div className="mascot-container"
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <span className="mascot" role="img" aria-label="Bintang">🐻</span>
+        <div className="speech-bubble">Let's count, read, and write numbers together! 🔢</div>
+      </motion.div>
 
       {/* Journey map */}
-      <div className="intro-journey-map">
-        <h3 className="intro-journey-title">Your Learning Journey</h3>
-        <div className="intro-journey-steps">
-          {JOURNEY_PHASES.map((p, i) => (
-            <div key={i} className="intro-journey-step">
-              <div className="intro-journey-icon">{p.icon}</div>
-              <div className="intro-journey-info">
-                <div className="intro-journey-label">{p.label}</div>
-                <div className="intro-journey-desc">{p.desc}</div>
-              </div>
-              {i < JOURNEY_PHASES.length - 1 && <div className="intro-journey-arrow">→</div>}
-            </div>
-          ))}
-        </div>
-      </div>
+      <motion.div className="intro-journey-map"
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
+        {PHASES.map((step, i) => (
+          <motion.div key={step.label} className="intro-journey-step glass-card"
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32 + i * 0.06 }}>
+            <span className="step-icon" role="img" aria-hidden="true">{step.icon}</span>
+            <div className="step-label">{step.label}</div>
+            <div className="step-desc">{step.desc}</div>
+          </motion.div>
+        ))}
+      </motion.div>
 
-      {/* CTA */}
-      <button className="btn btn-primary btn-lg intro-start-btn" onClick={handleStart} id="start-journey-btn">
-        🚀 Begin Your Journey!
-      </button>
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+        <Button variant="primary" size="lg" onClick={onBegin}>🚀 Begin Your Journey!</Button>
+      </motion.div>
 
-      {/* Feature cards */}
-      <div className="feature-cards">
-        <div className="feature-card">
-          <div className="feature-card-icon">🎯</div>
-          <div className="feature-card-label">100 Challenges</div>
-        </div>
-        <div className="feature-card">
-          <div className="feature-card-icon">🔢</div>
-          <div className="feature-card-label">Number Bonds</div>
-        </div>
-        <div className="feature-card">
-          <div className="feature-card-icon">✨</div>
-          <div className="feature-card-label">Badges & XP</div>
-        </div>
+      <div className="intro-feature-cards">
+        {FEATURES.map(f => (
+          <div key={f.label} className="intro-feature-card glass-card">{f.icon} {f.label}</div>
+        ))}
       </div>
     </div>
   );

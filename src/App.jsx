@@ -1,122 +1,78 @@
-import { useState, useCallback } from 'react';
-import IntroScreen from './components/IntroScreen';
-import WonderPhase from './components/WonderPhase';
-import StoryPhase from './components/StoryPhase';
-import SimulatePhase from './components/SimulatePhase';
-import PlayPhase from './components/PlayPhase';
-import ReflectPhase from './components/ReflectPhase';
-import FloatingNumbers from './components/FloatingNumbers';
+// src/App.jsx
+import React, { useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 
-const PHASES = [
-  { id: 'wonder', label: 'Wonder', icon: '🔍', num: '01' },
-  { id: 'story', label: 'Story', icon: '📖', num: '02' },
-  { id: 'simulate', label: 'Simulate', icon: '🧪', num: '03' },
-  { id: 'play', label: 'Play', icon: '🎮', num: '04' },
-  { id: 'reflect', label: 'Reflect', icon: '📓', num: '05' },
-];
+import IntroScreen    from './components/IntroScreen.jsx';
+import PhaseNav       from './components/PhaseNav.jsx';
+import TopBar         from './components/TopBar.jsx';
+import FloatingSymbols from './components/FloatingSymbols.jsx';
 
-const STORAGE_KEY = 'intellia_number_bonds_subtraction_v1';
+import WonderPhase   from './features/wonder/WonderPhase.jsx';
+import StoryPhase    from './features/story/StoryPhase.jsx';
+import SimulatePhase from './features/simulate/SimulatePhase.jsx';
+import PlayPhase     from './features/play/PlayPhase.jsx';
+import ReflectPhase  from './features/reflect/ReflectPhase.jsx';
 
-function saveProgress(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, timestamp: Date.now() }));
-}
+import { useAudio } from './core/audio/useAudio.js';
+import { resetSession } from './core/questions/questionFactory.js';
+
+const PHASE_ORDER = ['intro', 'wonder', 'story', 'simulate', 'play', 'reflect'];
+
+// Simple fade variant — no y-shift so there's no layout jump
+const fadeVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.35 } },
+  exit:    { opacity: 0, transition: { duration: 0.22 } },
+};
 
 export default function App() {
   const [phase, setPhase] = useState('intro');
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [playStats, setPlayStats] = useState(null);
+  const { audioEnabled, toggleAudio, playNarration, stop } = useAudio();
 
-  const goHome = useCallback(() => setPhase('intro'), []);
+  const go = useCallback((targetPhase) => {
+    stop();
+    setPhase(targetPhase);
+  }, [stop]);
 
-  const handleWonderComplete = useCallback(() => setPhase('story'), []);
-  const handleStoryComplete = useCallback(() => setPhase('simulate'), []);
-  const handleSimulateComplete = useCallback(() => setPhase('play'), []);
+  const advance = useCallback(() => {
+    stop();
+    const idx = PHASE_ORDER.indexOf(phase);
+    if (idx < PHASE_ORDER.length - 1) setPhase(PHASE_ORDER[idx + 1]);
+  }, [phase, stop]);
 
-  const handlePlayComplete = useCallback((stats) => {
-    setPlayStats(stats);
-    saveProgress({ phase: 'reflect', stats });
-    setPhase('reflect');
-  }, []);
+  const goHome = useCallback(() => { stop(); setPhase('intro'); }, [stop]);
 
-  const handleRestart = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setPhase('intro');
-    setPlayStats(null);
-  }, []);
+  const restart = useCallback(() => {
+    stop();
+    resetSession();
+    setPhase('wonder');
+  }, [stop]);
 
-  const currentPhaseIndex = PHASES.findIndex(p => p.id === phase);
+  const audioProps = { playNarration, stop, audioEnabled };
 
   return (
-    <>
-      <FloatingNumbers />
-      <div className="app-container">
-        {/* Audio toggle */}
-        <button
-          onClick={() => setAudioEnabled(a => !a)}
-          className="audio-toggle-btn"
-          aria-label="Toggle audio"
+    <div className="app-container">
+      <FloatingSymbols />
+      <TopBar audioEnabled={audioEnabled} onToggleAudio={toggleAudio} onHome={goHome} showHome={phase !== 'intro'} />
+      <PhaseNav currentPhase={phase} onPhaseClick={go} />
+
+      <AnimatePresence mode="popLayout">
+        <motion.div
+          key={phase}
+          variants={fadeVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          style={{ position: 'absolute', inset: 0, zIndex: 1 }}
         >
-          {audioEnabled ? '🔊' : '🔇'}
-        </button>
-
-        {/* Journey progress bar */}
-        {phase !== 'intro' && (
-          <div className="journey-bar">
-            {PHASES.map((p, i) => (
-              <div key={p.id} className={`journey-step ${p.id === phase ? 'active' : i < currentPhaseIndex ? 'completed' : ''}`}>
-                <div className="journey-step-dot">
-                  {i < currentPhaseIndex ? '✓' : p.num}
-                </div>
-                <span className="journey-step-label">{p.icon} {p.label}</span>
-                {i < PHASES.length - 1 && (
-                  <div className={`journey-connector ${i < currentPhaseIndex ? 'filled' : ''}`} />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Home button */}
-        {phase !== 'intro' && (
-          <button className="home-btn" onClick={goHome} aria-label="Go home">
-            🏠 Home
-          </button>
-        )}
-
-        {/* Phases */}
-        {phase === 'intro' && (
-          <IntroScreen
-            onStart={() => setPhase('wonder')}
-            audioEnabled={audioEnabled}
-            onToggleAudio={() => setAudioEnabled(a => !a)}
-          />
-        )}
-
-        {phase === 'wonder' && (
-          <WonderPhase onComplete={handleWonderComplete} audioEnabled={audioEnabled} />
-        )}
-
-        {phase === 'story' && (
-          <StoryPhase onComplete={handleStoryComplete} audioEnabled={audioEnabled} />
-        )}
-
-        {phase === 'simulate' && (
-          <SimulatePhase onComplete={handleSimulateComplete} audioEnabled={audioEnabled} />
-        )}
-
-        {phase === 'play' && (
-          <PlayPhase onComplete={handlePlayComplete} audioEnabled={audioEnabled} />
-        )}
-
-        {phase === 'reflect' && (
-          <ReflectPhase
-            stats={playStats}
-            onRestart={handleRestart}
-            onGoHome={goHome}
-            audioEnabled={audioEnabled}
-          />
-        )}
-      </div>
-    </>
+          {phase === 'intro'    && <IntroScreen onBegin={() => go('wonder')} />}
+          {phase === 'wonder'   && <WonderPhase   onComplete={advance} {...audioProps} />}
+          {phase === 'story'    && <StoryPhase     onComplete={advance} {...audioProps} />}
+          {phase === 'simulate' && <SimulatePhase  onComplete={advance} {...audioProps} />}
+          {phase === 'play'     && <PlayPhase      onComplete={advance} {...audioProps} />}
+          {phase === 'reflect'  && <ReflectPhase   onHome={goHome} onRestart={restart} playNarration={playNarration} />}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 }
